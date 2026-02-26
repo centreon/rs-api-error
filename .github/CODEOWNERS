@@ -1,0 +1,19 @@
+
+# Rust Codeowners rules
+*.rs                        @centreon/owners-rust
+Cargo.toml                  @centreon/owners-rust
+Cargo.lock                  @centreon/owners-rust
+/lib/crates/**/README.md    @centreon/owners-rust
+/lib/crates/**/docs/        @centreon/owners-rust
+**/crate/**/README.md       @centreon/owners-rust
+**/crate/**/docs/           @centreon/owners-rust
+
+# Pipelines Codeowners rules
+.github/**                    @centreon/owners-pipelines
+.yamlfix.toml                 @centreon/owners-pipelines
+
+# Security Codeowners rules
+.gitleaks.toml                @centreon/owners-security
+.gitleaksignore               @centreon/owners-security
+.githooks/pre-commit          @centreon/owners-security
+**/secu-*.yml                 @centreon/owners-security
