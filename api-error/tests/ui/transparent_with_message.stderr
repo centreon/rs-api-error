@@ -1,0 +1,5 @@
+error: `transparent` cannot be combined with other `api_error` attributes
+ --> tests/ui/transparent_with_message.rs:6:17
+  |
+6 |     #[api_error(transparent, message = "Cannot be combined")]
+  |                 ^^^^^^^^^^^

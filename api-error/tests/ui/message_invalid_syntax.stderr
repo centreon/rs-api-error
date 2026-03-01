@@ -1,0 +1,5 @@
+error: Only `message = "..."` or `message(inherit)` syntax is allowed in `api_error` attribute
+ --> tests/ui/message_invalid_syntax.rs:6:25
+  |
+6 |     #[api_error(message(invalid))]
+  |                         ^^^^^^^

@@ -1,0 +1,5 @@
+error: duplicate `status_code` attribute in `api_error`
+ --> tests/ui/duplicate_status_code.rs:7:5
+  |
+7 |     #[api_error(status_code = 500)]
+  |     ^

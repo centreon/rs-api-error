@@ -1,0 +1,5 @@
+error: unmatched '{' in format string
+ --> tests/ui/format_unmatched_brace.rs:6:27
+  |
+6 |     #[api_error(message = "Missing closing brace {0")]
+  |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^

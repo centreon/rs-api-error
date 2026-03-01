@@ -1,0 +1,5 @@
+error: the `#[api_error(transparent)]` attribute is only allowed on structs with only one field
+ --> tests/ui/transparent_multi_field_struct.rs:6:8
+  |
+6 | struct MyError(String, i32);
+  |        ^^^^^^^

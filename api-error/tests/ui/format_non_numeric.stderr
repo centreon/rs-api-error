@@ -1,0 +1,5 @@
+error: invalid format argument 'abc', formatting arguments must be numeric positional indices
+ --> tests/ui/format_non_numeric.rs:6:27
+  |
+6 |     #[api_error(message = "Invalid argument {abc}")]
+  |                           ^^^^^^^^^^^^^^^^^^^^^^^^

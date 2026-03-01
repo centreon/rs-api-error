@@ -1,0 +1,5 @@
+error: `transparent` cannot be combined with other `api_error` attributes
+ --> tests/ui/transparent_with_status_code.rs:6:17
+  |
+6 |     #[api_error(transparent, status_code = 400)]
+  |                 ^^^^^^^^^^^

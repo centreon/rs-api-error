@@ -1,0 +1,19 @@
+error: this trait cannot be derived for unions
+ --> tests/ui/api_error_on_union.rs:3:10
+  |
+3 | #[derive(Debug, thiserror::Error, ApiError)]
+  |          ^^^^^
+
+error: union as errors are not supported
+ --> tests/ui/api_error_on_union.rs:4:1
+  |
+4 | / union MyError {
+5 | |     field: i32,
+6 | | }
+  | |_^
+
+error: ApiError can only be derived for structs and enums
+ --> tests/ui/api_error_on_union.rs:4:7
+  |
+4 | union MyError {
+  |       ^^^^^^^
