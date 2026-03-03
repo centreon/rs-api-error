@@ -1,0 +1,5 @@
+error: invalid format argument '', formatting arguments must be numeric positional indices
+ --> tests/ui/format_empty_argument.rs:6:27
+  |
+6 |     #[api_error(message = "Empty argument {}")]
+  |                           ^^^^^^^^^^^^^^^^^^^

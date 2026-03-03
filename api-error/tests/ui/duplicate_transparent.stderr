@@ -1,0 +1,5 @@
+error: `transparent` cannot be combined with other `api_error` attributes
+ --> tests/ui/duplicate_transparent.rs:7:5
+  |
+7 |     #[api_error(transparent)]
+  |     ^

@@ -1,0 +1,5 @@
+error: positional argument '2' out of bounds (max 0)
+ --> tests/ui/format_out_of_bounds.rs:6:27
+  |
+6 |     #[api_error(message = "Out of bounds {2}")]
+  |                           ^^^^^^^^^^^^^^^^^^^

@@ -1,0 +1,5 @@
+error: the `#[api_error(transparent)]` attribute is only allowed on unamed variants with only one field
+ --> tests/ui/transparent_multi_field_enum.rs:7:5
+  |
+7 |     TwoFields(String, i32),
+  |     ^^^^^^^^^

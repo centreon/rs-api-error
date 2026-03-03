@@ -1,0 +1,5 @@
+error: Expected comma separated key-value pairs in api_error attribute
+ --> tests/ui/missing_comma_separator.rs:6:35
+  |
+6 |     #[api_error(message = "Error" status_code = 400)]
+  |                                   ^^^^^^^^^^^
