@@ -10,17 +10,21 @@ on:
       - develop
 
 jobs:
+  dependency-scan:
+    uses: centreon/security-tools/.github/workflows/dependency-analysis.yml@main
+
   release-plz-pr:
     name: Release PR
     runs-on: ubuntu-latest
+    needs: [dependency-scan]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7 # stable
 
-      - uses: release-plz/action@v0.5
+      - uses: release-plz/action@f708778669256143d984cce4b23592637532e040 # v0.5
         with:
           command: release-pr
         env:
@@ -30,14 +34,15 @@ jobs:
   release-plz-release:
     name: Release
     runs-on: ubuntu-latest
+    needs: [dependency-scan]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7 # stable
 
-      - uses: release-plz/action@v0.5
+      - uses: release-plz/action@f708778669256143d984cce4b23592637532e040 # v0.5
         with:
           command: release
         env:
