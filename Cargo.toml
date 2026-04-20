@@ -1,9 +1,10 @@
 [workspace.package]
+description = "A derive macro for attaching HTTP status codes and user-facing messages to Rust error types."
 edition = "2024"
 license = "Apache-2.0"
 rust-version = "1.85"
-repository = "https://github.com/centreon-pulse/rs-api-error"
-homepage = "https://github.com/centreon-pulse/rs-api-error"
+repository = "https://github.com/centreon/rs-api-error"
+homepage = "https://github.com/centreon/rs-api-error"
 keywords = ["derive", "error", "error-handling", "http"]
 readme = "README.md"
 categories = ["rust-patterns"]
