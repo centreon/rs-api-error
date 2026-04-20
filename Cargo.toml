@@ -1,5 +1,5 @@
 [workspace.package]
-description = "HTTP API error handling utilities for Rust"
+description = "A derive macro for attaching HTTP status codes and user-facing messages to Rust error types."
 edition = "2024"
 license = "Apache-2.0"
 rust-version = "1.85"
