@@ -10,7 +10,7 @@ updates:
           - "version-update:semver-minor"
           - "version-update:semver-patch"
     commit-message:
-      prefix: "chore(ci)"
+      prefix: "chore(deps)"
 
   - package-ecosystem: github-actions
     directory: /
