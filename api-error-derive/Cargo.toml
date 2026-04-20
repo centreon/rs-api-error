@@ -1,6 +1,6 @@
 [package]
 name = "api-error-derive"
-version = "0.1.0"
+version = "0.1.1"
 description = "Procedural macros for the api-error crate"
 edition.workspace = true
 license.workspace = true
