@@ -209,9 +209,9 @@ fn expand_status_arm(
 
         // custom or default status code
         (_, VariantAttr::Custom { status_code, .. } | VariantAttr::InheritMsg { status_code }) => {
-            status_code
-                .clone()
-                .unwrap_or_else(|| quote! { ::api_error::__http::StatusCode::INTERNAL_SERVER_ERROR })
+            status_code.clone().unwrap_or_else(
+                || quote! { ::api_error::__http::StatusCode::INTERNAL_SERVER_ERROR },
+            )
         }
     };
 
