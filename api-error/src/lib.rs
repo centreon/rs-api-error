@@ -161,6 +161,9 @@ use std::borrow::Cow;
 
 use http::StatusCode;
 
+#[doc(hidden)]
+pub use ::http as __http;
+
 /// Derive macro for implementing [`ApiError`] on enums and structs.
 ///
 /// This macro generates an [`ApiError`] implementation based on
@@ -352,6 +355,9 @@ pub mod axum {
     use serde_core::{Serialize, ser::SerializeMap};
 
     use crate::ApiError;
+
+    #[doc(hidden)]
+    pub use ::axum_core as __axum_core;
 
     pub struct ApiErrorResponse<'a> {
         message: Cow<'a, str>,
