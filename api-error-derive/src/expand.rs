@@ -36,7 +36,7 @@ pub fn expand(input: DeriveInput) -> TokenStream {
     let api_err_impl = quote! {
         #[automatically_derived]
         impl #impl_generics ApiError for #ident #ty_generics #where_clause {
-            fn status_code(&self) -> ::http::StatusCode {
+            fn status_code(&self) -> ::api_error::__http::StatusCode {
                 #status_code
             }
 
@@ -49,8 +49,8 @@ pub fn expand(input: DeriveInput) -> TokenStream {
     #[cfg(feature = "axum")]
     let axum_impl = Some(quote! {
         #[automatically_derived]
-        impl #impl_generics ::axum_core::response::IntoResponse for #ident #ty_generics #where_clause {
-            fn into_response(self) -> ::axum_core::response::Response {
+        impl #impl_generics ::api_error::axum::__axum_core::response::IntoResponse for #ident #ty_generics #where_clause {
+            fn into_response(self) -> ::api_error::axum::__axum_core::response::Response {
                 ::api_error::axum::ApiErrorResponse::new(&self).into_response()
             }
         }
@@ -80,7 +80,7 @@ fn expand_struct(ident: &Ident, data: DataStruct, attrs: &[Attribute]) -> syn::R
         VariantAttr::InheritMsg { status_code } | VariantAttr::Custom { status_code, .. } => {
             status_code
                 .clone()
-                .unwrap_or(quote! { ::http::StatusCode::INTERNAL_SERVER_ERROR })
+                .unwrap_or(quote! { ::api_error::__http::StatusCode::INTERNAL_SERVER_ERROR })
         }
     };
 
@@ -211,7 +211,7 @@ fn expand_status_arm(
         (_, VariantAttr::Custom { status_code, .. } | VariantAttr::InheritMsg { status_code }) => {
             status_code
                 .clone()
-                .unwrap_or_else(|| quote! { ::http::StatusCode::INTERNAL_SERVER_ERROR })
+                .unwrap_or_else(|| quote! { ::api_error::__http::StatusCode::INTERNAL_SERVER_ERROR })
         }
     };
 
