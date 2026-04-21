@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3](https://github.com/centreon/rs-api-error/compare/api-error-derive-v0.1.2...api-error-derive-v0.1.3) - 2026-04-21
+
+### Fixed
+
+- re-export transitive deps to avoid axum_core not found bug [release] ([#15](https://github.com/centreon/rs-api-error/pull/15))
+
 ## [0.1.2](https://github.com/centreon/rs-api-error/compare/api-error-derive-v0.1.1...api-error-derive-v0.1.2) - 2026-04-21
 
 ### Added
