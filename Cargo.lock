@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "api-error"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "api-error-derive",
  "axum",
@@ -18,7 +18,7 @@ dependencies = [
 
 [[package]]
 name = "api-error-derive"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "proc-macro2",
  "quote",
