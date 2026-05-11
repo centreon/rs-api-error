@@ -22,7 +22,10 @@ serde_json = { version = "1", optional = true }
 [dev-dependencies]
 thiserror = "2"
 trybuild = "1"
-axum = { version = "0.8", default-features = false }
+axum = { version = "0.8", default-features = false, features = ["json"] }
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(readme_doctest)'] }
 
 [features]
 default = ["derive"]

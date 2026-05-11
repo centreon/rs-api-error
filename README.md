@@ -164,3 +164,32 @@ let app: Router = Router::new().route("/", get(handler));
 // Status: 404
 // Body: {"message": "Resource not found"}
 ```
+
+### Customizing axum error response format
+
+The default response body is `{"message": "<error msg>"}` with the error's HTTP
+status code. To use a different format, register a custom responder once at
+startup with `api_error::axum::set_error_responder`. Every type deriving
+`ApiError` will route through it.
+
+```rust
+use api_error::ApiError;
+use axum::{Json, response::{IntoResponse, Response}};
+use serde_json::json;
+
+fn my_responder(err: &dyn ApiError) -> Response {
+    let status = err.status_code();
+    let body = json!({
+        "error": {
+            "code": status.as_u16(),
+            "message": err.message(),
+        }
+    });
+    (status, Json(body)).into_response()
+}
+
+fn main() {
+    api_error::axum::set_error_responder(my_responder);
+    // ... build router and serve
+}
+```

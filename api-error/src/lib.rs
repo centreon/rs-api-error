@@ -156,6 +156,38 @@
 //! // Body: {"message": "Resource not found"}
 //! ```
 //!
+//! ### Customizing axum error response format
+//!
+//! The default response body is `{"message": "<error msg>"}` with the error's
+//! HTTP status code. To use a different format, register a custom responder
+//! once at startup with [`axum::set_error_responder`]. Every type deriving
+//! [`ApiError`] will route through it.
+//!
+//! ```no_run
+//! use api_error::ApiError;
+//! use axum_core::response::{IntoResponse, Response};
+//! use http::StatusCode;
+//! use serde_json::json;
+//!
+//! fn my_responder(err: &dyn ApiError) -> Response {
+//!     let status = err.status_code();
+//!     let body = serde_json::to_vec(&json!({
+//!         "error": {
+//!             "code": status.as_u16(),
+//!             "message": err.message(),
+//!         }
+//!     })).unwrap();
+//!     (status, body).into_response()
+//! }
+//!
+//! api_error::axum::set_error_responder(my_responder);
+//! ```
+
+// Compile the README's code blocks as doctests. Opt-in via
+// `RUSTFLAGS="--cfg readme_doctest" cargo test --all-features` (this is what CI runs).
+#[cfg(readme_doctest)]
+#[doc = include_str!("../../README.md")]
+mod _readme_doctest {}
 
 use std::borrow::Cow;
 
@@ -345,7 +377,7 @@ pub trait ApiError: std::error::Error {
 /// Custom implementation for axum integration
 #[cfg(feature = "axum")]
 pub mod axum {
-    use std::borrow::Cow;
+    use std::{borrow::Cow, sync::OnceLock};
 
     use axum_core::{
         body::Body,
@@ -354,10 +386,55 @@ pub mod axum {
     use http::StatusCode;
     use serde_core::{Serialize, ser::SerializeMap};
 
-    use crate::ApiError;
-
     #[doc(hidden)]
     pub use ::axum_core as __axum_core;
+
+    use super::ApiError;
+
+    #[doc(hidden)]
+    pub static __ERROR_RESPONDER: OnceLock<ApiErrorResponder> = OnceLock::new();
+
+    /// A function that converts an [`ApiError`] into an axum [`Response`].
+    ///
+    /// Register one globally with [`set_error_responder`] to customize the
+    /// response format produced by types deriving [`ApiError`].
+    pub type ApiErrorResponder = fn(&dyn ApiError) -> Response;
+
+    /// Sets a custom [`ApiErrorResponder`] that will be used to convert
+    /// [`ApiError`] to a [`Response`].
+    ///
+    /// For a non-panicking alternative, use [`try_set_error_responder`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if the responder is already set.
+    pub fn set_error_responder(f: ApiErrorResponder) {
+        __ERROR_RESPONDER
+            .set(f)
+            .expect("an api error responder should be set only once");
+    }
+
+    /// Tries to set a custom [`ApiErrorResponder`] that will be used to convert
+    /// [`ApiError`] to a [`Response`].
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the responder is already set.
+    pub fn try_set_error_responder(f: ApiErrorResponder) -> Result<(), ApiErrorResponder> {
+        __ERROR_RESPONDER.set(f)
+    }
+
+    /// The default [`ApiErrorResponder`].
+    ///
+    /// Returns a [`Response`] whose status is [`ApiError::status_code`] and
+    /// whose JSON body is:
+    ///
+    /// ```json
+    /// { "message": "<ApiError::message()>" }
+    /// ```
+    pub fn default_error_responder(api_error: &dyn ApiError) -> Response {
+        ApiErrorResponse::new(api_error).into_response()
+    }
 
     pub struct ApiErrorResponse<'a> {
         message: Cow<'a, str>,
