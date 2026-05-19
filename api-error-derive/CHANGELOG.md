@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.6](https://github.com/centreon/rs-api-error/compare/api-error-derive-v0.1.5...api-error-derive-v0.1.6) - 2026-05-19
+
+### Fixed
+
+- *(derive)* http crate hygiene issue [release] ([#28](https://github.com/centreon/rs-api-error/pull/28))
+
 ## [0.1.4](https://github.com/centreon/rs-api-error/compare/api-error-derive-v0.1.3...api-error-derive-v0.1.4) - 2026-05-11
 
 ### Added
