@@ -55,6 +55,14 @@ pub fn expand(input: DeriveInput) -> TokenStream {
                     .unwrap_or(::api_error::axum::default_error_responder)(&self)
             }
         }
+
+        #[automatically_derived]
+        impl #impl_generics ::api_error::axum::__axum_core::response::IntoResponse for &#ident #ty_generics #where_clause {
+            fn into_response(self) -> ::api_error::axum::__axum_core::response::Response {
+                ::api_error::axum::__ERROR_RESPONDER.get().copied()
+                    .unwrap_or(::api_error::axum::default_error_responder)(self)
+            }
+        }
     });
 
     #[cfg(not(feature = "axum"))]
