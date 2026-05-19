@@ -1,6 +1,7 @@
 // Copyright 2025-Present Centreon
 // SPDX-License-Identifier: Apache-2.0
 #![warn(clippy::pedantic)]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 //! # Api Error
 //!

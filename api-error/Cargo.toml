@@ -25,7 +25,7 @@ trybuild = "1"
 axum = { version = "0.8", default-features = false, features = ["json"] }
 
 [lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(readme_doctest)'] }
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(readme_doctest)', 'cfg(docsrs)'] }
 
 [features]
 default = ["derive"]
@@ -36,3 +36,7 @@ axum = [
     "dep:serde_json",
     "api-error-derive?/axum",
 ]
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
