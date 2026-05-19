@@ -222,7 +222,7 @@ impl Parse for CustomAttrFields {
                         let lit_int: syn::LitInt = input.parse()?;
                         status_code = Some(quote! {
                             const {
-                                match ::http::StatusCode::from_u16(#lit_int) {
+                                match ::api_error::__http::StatusCode::from_u16(#lit_int) {
                                     Ok(code) => code,
                                     Err(_) => panic!("Invalid status code literal"),
                                 }
