@@ -5,7 +5,8 @@
 
 //! # Api Error
 //!
-//! A Rust crate for easily defining API-friendly error types with HTTP status codes and user-facing error messages.
+//! A Rust crate for easily defining API-friendly error types with HTTP status codes
+//! and user-facing error messages.
 //!
 //! ## Usage
 //!
