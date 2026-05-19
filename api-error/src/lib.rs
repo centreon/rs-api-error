@@ -323,7 +323,6 @@ pub use ::http as __http;
 /// #[api_error(message = "Final")]
 /// ```
 #[cfg(feature = "derive")]
-#[cfg_attr(docsrs, doc(cfg(feature = "derive")))]
 pub use api_error_derive::ApiError;
 
 /// An error that can be returned by a service API.
@@ -378,7 +377,6 @@ pub trait ApiError: std::error::Error {
 
 /// Custom implementation for axum integration
 #[cfg(feature = "axum")]
-#[cfg_attr(docsrs, doc(cfg(feature = "axum")))]
 pub mod axum {
     use std::{borrow::Cow, sync::OnceLock};
 
