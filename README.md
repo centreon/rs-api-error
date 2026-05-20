@@ -164,3 +164,66 @@ let app: Router = Router::new().route("/", get(handler));
 // Status: 404
 // Body: {"message": "Resource not found"}
 ```
+
+### Attaching extended data to the response
+
+Override `ApiError::extended` to attach a structured payload that the default
+responder will serialize under an `"extended"` key alongside `"message"`.
+Returning `None` (the default) omits the field entirely.
+
+```rust
+use api_error::ApiError;
+use http::StatusCode;
+use serde_json::json;
+use std::borrow::Cow;
+
+#[derive(Debug, thiserror::Error)]
+#[error("validation failed")]
+struct ValidationError {
+    field: &'static str,
+}
+
+impl ApiError for ValidationError {
+    fn status_code(&self) -> StatusCode { StatusCode::UNPROCESSABLE_ENTITY }
+    fn message(&self) -> Cow<'_, str> { Cow::Borrowed("validation failed") }
+    fn extended(&self) -> Option<serde_json::Value> {
+        Some(json!({ "field": self.field }))
+    }
+}
+
+// Resulting JSON body:
+// {"message": "validation failed", "extended": {"field": "email"}}
+```
+
+> Note: when using `#[derive(ApiError)]`, the generated `impl` covers all trait
+> methods, so overriding `extended` requires writing the `impl` manually.
+
+### Customizing axum error response format
+
+The default response body is `{"message": "<error msg>"}` (plus an `"extended"`
+field when `ApiError::extended` returns `Some`) with the error's HTTP status
+code. To use a different format, register a custom responder once at startup
+with `api_error::axum::set_error_responder`. Every type deriving `ApiError`
+will route through it.
+
+```rust
+use api_error::ApiError;
+use axum::{Json, response::{IntoResponse, Response}};
+use serde_json::json;
+
+fn my_responder(err: &dyn ApiError) -> Response {
+    let status = err.status_code();
+    let body = json!({
+        "error": {
+            "code": status.as_u16(),
+            "message": err.message(),
+        }
+    });
+    (status, Json(body)).into_response()
+}
+
+fn main() {
+    api_error::axum::set_error_responder(my_responder);
+    // ... build router and serve
+}
+```

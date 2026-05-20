@@ -12,7 +12,7 @@ readme.workspace = true
 categories.workspace = true
 
 [dependencies]
-api-error-derive = { path = "../api-error-derive", optional = true }
+api-error-derive = { path = "../api-error-derive", version = "0.1", optional = true }
 
 http = "1"
 serde_core = { version = "1", optional = true }
@@ -22,7 +22,10 @@ serde_json = { version = "1", optional = true }
 [dev-dependencies]
 thiserror = "2"
 trybuild = "1"
-axum = { version = "0.8", default-features = false }
+axum = { version = "0.8", default-features = false, features = ["json"] }
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(readme_doctest)', 'cfg(docsrs)'] }
 
 [features]
 default = ["derive"]
@@ -33,3 +36,7 @@ axum = [
     "dep:serde_json",
     "api-error-derive?/axum",
 ]
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]

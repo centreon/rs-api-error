@@ -1,10 +1,12 @@
 // Copyright 2025-Present Centreon
 // SPDX-License-Identifier: Apache-2.0
 #![warn(clippy::pedantic)]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 //! # Api Error
 //!
-//! A Rust crate for easily defining API-friendly error types with HTTP status codes and user-facing error messages.
+//! A Rust crate for easily defining API-friendly error types with HTTP status codes
+//! and user-facing error messages.
 //!
 //! ## Usage
 //!
@@ -156,10 +158,79 @@
 //! // Body: {"message": "Resource not found"}
 //! ```
 //!
+//! ### Attaching extended data to the response
+//!
+//! Override [`ApiError::extended`] to attach a structured payload that the
+//! default responder will serialize under an `"extended"` key alongside
+//! `"message"`. Returning `None` (the default) omits the field entirely.
+//!
+//! ```rust
+//! # use api_error::ApiError;
+//! # use http::StatusCode;
+//! # use serde_json::json;
+//! # use std::borrow::Cow;
+//! #[derive(Debug, thiserror::Error)]
+//! #[error("validation failed")]
+//! struct ValidationError {
+//!     field: &'static str,
+//! }
+//!
+//! impl ApiError for ValidationError {
+//!     fn status_code(&self) -> StatusCode { StatusCode::UNPROCESSABLE_ENTITY }
+//!     fn message(&self) -> Cow<'_, str> { Cow::Borrowed("validation failed") }
+//!     fn extended(&self) -> Option<serde_json::Value> {
+//!         Some(json!({ "field": self.field }))
+//!     }
+//! }
+//!
+//! // Resulting JSON body:
+//! // {"message": "validation failed", "extended": {"field": "email"}}
+//! ```
+//!
+//! Note: when using `#[derive(ApiError)]`, the generated `impl` covers all
+//! trait methods, so overriding `extended` requires writing the `impl`
+//! manually.
+//!
+//! ### Customizing axum error response format
+//!
+//! The default response body is `{"message": "<error msg>"}` (plus an
+//! `"extended"` field when [`ApiError::extended`] returns `Some`) with the
+//! error's HTTP status code. To use a different format, register a custom
+//! responder once at startup with [`axum::set_error_responder`]. Every type
+//! deriving [`ApiError`] will route through it.
+//!
+//! ```no_run
+//! use api_error::ApiError;
+//! use axum_core::response::{IntoResponse, Response};
+//! use http::StatusCode;
+//! use serde_json::json;
+//!
+//! fn my_responder(err: &dyn ApiError) -> Response {
+//!     let status = err.status_code();
+//!     let body = serde_json::to_vec(&json!({
+//!         "error": {
+//!             "code": status.as_u16(),
+//!             "message": err.message(),
+//!         }
+//!     })).unwrap();
+//!     (status, body).into_response()
+//! }
+//!
+//! api_error::axum::set_error_responder(my_responder);
+//! ```
 
-use std::borrow::Cow;
+// Compile the README's code blocks as doctests. Opt-in via
+// `RUSTFLAGS="--cfg readme_doctest" cargo test --all-features` (this is what CI runs).
+#[cfg(readme_doctest)]
+#[doc = include_str!("../../README.md")]
+mod _readme_doctest {}
+
+use std::{borrow::Cow, convert::Infallible};
 
 use http::StatusCode;
+
+#[doc(hidden)]
+pub use ::http as __http;
 
 /// Derive macro for implementing [`ApiError`] on enums and structs.
 ///
@@ -337,40 +408,129 @@ pub trait ApiError: std::error::Error {
 
         Cow::Borrowed(msg)
     }
+
+    /// Returns an optional structured payload to include in the default
+    /// axum response body under the `"extended"` key.
+    ///
+    /// Returning `None` (the default) omits the field entirely. Override
+    /// this when you need to surface machine-readable details (e.g. a list
+    /// of invalid fields, a retry-after hint, an upstream error code) in
+    /// addition to the human-readable [`message`](Self::message).
+    ///
+    /// Only available with the `axum` feature.
+    #[cfg(feature = "axum")]
+    fn extended(&self) -> Option<serde_json::Value> {
+        None
+    }
+}
+
+impl ApiError for Infallible {}
+impl<T: ApiError> ApiError for &T {
+    fn status_code(&self) -> StatusCode {
+        (*self).status_code()
+    }
+
+    fn message(&self) -> Cow<'_, str> {
+        (*self).message()
+    }
+
+    #[cfg(feature = "axum")]
+    fn extended(&self) -> Option<serde_json::Value> {
+        (*self).extended()
+    }
 }
 
 /// Custom implementation for axum integration
 #[cfg(feature = "axum")]
 pub mod axum {
-    use std::borrow::Cow;
+    use std::sync::OnceLock;
 
     use axum_core::{
         body::Body,
         response::{IntoResponse, Response},
     };
-    use http::{HeaderValue, StatusCode, header::CONTENT_TYPE};
+    use http::{HeaderValue, header::CONTENT_TYPE};
     use serde_core::{Serialize, ser::SerializeMap};
 
-    use crate::ApiError;
+    #[doc(hidden)]
+    pub use ::axum_core as __axum_core;
 
-    pub struct ApiErrorResponse<'a> {
-        message: Cow<'a, str>,
-        status_code: StatusCode,
+    use super::ApiError;
+
+    #[doc(hidden)]
+    pub static __ERROR_RESPONDER: OnceLock<ApiErrorResponder> = OnceLock::new();
+
+    /// A function that converts an [`ApiError`] into an axum [`Response`].
+    ///
+    /// Register one globally with [`set_error_responder`] to customize the
+    /// response format produced by types deriving [`ApiError`].
+    pub type ApiErrorResponder = fn(&dyn ApiError) -> Response;
+
+    /// Sets a custom [`ApiErrorResponder`] that will be used to convert
+    /// [`ApiError`] to a [`Response`].
+    ///
+    /// For a non-panicking alternative, use [`try_set_error_responder`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if the responder is already set.
+    pub fn set_error_responder(f: ApiErrorResponder) {
+        __ERROR_RESPONDER
+            .set(f)
+            .expect("an api error responder should be set only once");
     }
+
+    /// Tries to set a custom [`ApiErrorResponder`] that will be used to convert
+    /// [`ApiError`] to a [`Response`].
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the responder is already set.
+    pub fn try_set_error_responder(f: ApiErrorResponder) -> Result<(), ApiErrorResponder> {
+        __ERROR_RESPONDER.set(f)
+    }
+
+    /// The default [`ApiErrorResponder`].
+    ///
+    /// Returns a [`Response`] whose status is [`ApiError::status_code`] and
+    /// whose JSON body is:
+    ///
+    /// ```json
+    /// { "message": "<ApiError::message()>" }
+    /// ```
+    ///
+    /// When [`ApiError::extended`] returns `Some(value)`, the body also
+    /// includes an `"extended"` field carrying that value:
+    ///
+    /// ```json
+    /// { "message": "<ApiError::message()>", "extended": <value> }
+    /// ```
+    pub fn default_error_responder(api_error: &dyn ApiError) -> Response {
+        ApiErrorResponse::new(api_error).into_response()
+    }
+
+    pub struct ApiErrorResponse<'a>(&'a dyn ApiError);
 
     impl<'a> ApiErrorResponse<'a> {
         pub fn new(api_error: &'a dyn ApiError) -> Self {
-            Self {
-                message: api_error.message(),
-                status_code: api_error.status_code(),
-            }
+            Self(api_error)
         }
     }
 
     impl Serialize for ApiErrorResponse<'_> {
         fn serialize<S: serde_core::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-            let mut map = serializer.serialize_map(Some(1))?;
-            map.serialize_entry("message", &self.message)?;
+            let extended = self.0.extended();
+            let message = self.0.message();
+
+            let field_cnt = 1 + usize::from(extended.is_some());
+            let mut map = serializer.serialize_map(Some(field_cnt))?;
+
+            map.serialize_entry("message", &message)?;
+
+            if let Some(v) = &extended {
+                map.serialize_entry("extended", v)?;
+            }
+
             map.end()
         }
     }
@@ -381,7 +541,7 @@ pub mod axum {
             let body =
                 serde_json::to_vec(&self).expect("AxumApiError serialization should not fail");
 
-            let mut res = (self.status_code, Body::from(body)).into_response();
+            let mut res = (self.0.status_code(), Body::from(body)).into_response();
             res.headers_mut().insert(CONTENT_TYPE, APPLICATION_JSON);
             res
         }

@@ -1,6 +1,8 @@
 // Copyright 2025-Present Centreon
 // SPDX-License-Identifier: Apache-2.0
 
+#![cfg(feature = "axum")]
+
 use api_error::ApiError;
 use axum_core::response::IntoResponse;
 use http::StatusCode;
