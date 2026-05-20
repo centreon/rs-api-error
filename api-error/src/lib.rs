@@ -348,7 +348,7 @@ pub mod axum {
         body::Body,
         response::{IntoResponse, Response},
     };
-    use http::StatusCode;
+    use http::{HeaderValue, StatusCode, header::CONTENT_TYPE};
     use serde_core::{Serialize, ser::SerializeMap};
 
     use crate::ApiError;
@@ -377,10 +377,13 @@ pub mod axum {
 
     impl IntoResponse for ApiErrorResponse<'_> {
         fn into_response(self) -> Response {
+            const APPLICATION_JSON: HeaderValue = HeaderValue::from_static("application/json");
             let body =
                 serde_json::to_vec(&self).expect("AxumApiError serialization should not fail");
 
-            (self.status_code, Body::from(body)).into_response()
+            let mut res = (self.status_code, Body::from(body)).into_response();
+            res.headers_mut().insert(CONTENT_TYPE, APPLICATION_JSON);
+            res
         }
     }
 }
