@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.8](https://github.com/centreon/rs-api-error/compare/api-error-v0.1.7...api-error-v0.1.8) - 2026-05-20
+
+### Fixed
+
+- fix response type [release] ([#31](https://github.com/centreon/rs-api-error/pull/31))
+
 ## [0.1.5](https://github.com/centreon/rs-api-error/compare/api-error-v0.1.4...api-error-v0.1.5) - 2026-05-19
 
 ### Added
