@@ -1,7 +1,7 @@
 [workspace.package]
 description = "A derive macro for attaching HTTP status codes and user-facing messages to Rust error types."
 edition = "2024"
-version = "0.1.7"
+version = "0.1.8"
 license = "Apache-2.0"
 rust-version = "1.85"
 repository = "https://github.com/centreon/rs-api-error"
