@@ -10,6 +10,7 @@ use crate::{VariantAttr, parser};
 struct Expansion {
     status_code: TokenStream,
     message: TokenStream,
+    extended: TokenStream,
 }
 
 pub fn expand(input: DeriveInput) -> TokenStream {
@@ -25,6 +26,7 @@ pub fn expand(input: DeriveInput) -> TokenStream {
     let Expansion {
         status_code,
         message,
+        extended,
     } = match tokens {
         Ok(ts) => ts,
         Err(err) => return err.to_compile_error(),
@@ -32,6 +34,19 @@ pub fn expand(input: DeriveInput) -> TokenStream {
 
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     let ident = &input.ident;
+
+    #[cfg(feature = "axum")]
+    let extended_impl = Some(quote! {
+        fn extended(&self) -> ::std::option::Option<::api_error::__serde_json::Value> {
+            #extended
+        }
+    });
+
+    #[cfg(not(feature = "axum"))]
+    let extended_impl: Option<TokenStream> = {
+        let _ = extended;
+        None
+    };
 
     let api_err_impl = quote! {
         #[automatically_derived]
@@ -43,6 +58,8 @@ pub fn expand(input: DeriveInput) -> TokenStream {
             fn message<'a>(&'a self) -> ::std::borrow::Cow<'a, str> {
                 #message
             }
+
+            #extended_impl
         }
     };
 
@@ -90,6 +107,13 @@ fn expand_struct(ident: &Ident, data: DataStruct, attrs: &[Attribute]) -> syn::R
             status_code
                 .clone()
                 .unwrap_or(quote! { ::api_error::__http::StatusCode::INTERNAL_SERVER_ERROR })
+        }
+    };
+
+    let extended = match &attr {
+        VariantAttr::Transparent => quote! { ApiError::extended(&self.0) },
+        VariantAttr::InheritMsg { .. } | VariantAttr::Custom { .. } => {
+            quote! { ::std::option::Option::None }
         }
     };
 
@@ -145,6 +169,7 @@ fn expand_struct(ident: &Ident, data: DataStruct, attrs: &[Attribute]) -> syn::R
     Ok(Expansion {
         status_code,
         message,
+        extended,
     })
 }
 
@@ -155,14 +180,20 @@ fn expand_enum(data: DataEnum) -> syn::Result<Expansion> {
         .map(expand_enum_variant)
         .collect::<syn::Result<Vec<_>>>()?;
 
-    let (status_arms, message_arms): (Vec<_>, Vec<_>) = variant_expansions
-        .into_iter()
-        .map(|v| (v.status_code, v.message))
-        .unzip();
+    let mut status_arms = Vec::with_capacity(variant_expansions.len());
+    let mut message_arms = Vec::with_capacity(variant_expansions.len());
+    let mut extended_arms = Vec::with_capacity(variant_expansions.len());
+
+    for v in variant_expansions {
+        status_arms.push(v.status_code);
+        message_arms.push(v.message);
+        extended_arms.push(v.extended);
+    }
 
     Ok(Expansion {
         status_code: quote! { match self { #(#status_arms),* } },
         message: quote! { match self { #(#message_arms),* } },
+        extended: quote! { match self { #(#extended_arms),* } },
     })
 }
 
@@ -171,11 +202,13 @@ fn expand_enum_variant(v: Variant) -> syn::Result<Expansion> {
     let attr_args = parser::parse_variant_attrs(&v.attrs)?;
 
     let status_arm = expand_status_arm(&v.ident, &v.fields, &attr_args)?;
+    let extended_arm = expand_extended_arm(&v.ident, &v.fields, &attr_args)?;
     let message_arm = expand_message_arm(&v.ident, &v.fields, attr_args)?;
 
     Ok(Expansion {
         status_code: status_arm,
         message: message_arm,
+        extended: extended_arm,
     })
 }
 
@@ -274,4 +307,31 @@ fn expand_message_arm(
     };
 
     Ok(quote! { #message_pat => #message_arm })
+}
+
+/// Generate a match statement for the `extended` method.
+fn expand_extended_arm(
+    variant_ident: &Ident,
+    fields: &Fields,
+    attr: &VariantAttr,
+) -> syn::Result<TokenStream> {
+    let extended_pat = expand_variant_pattern(variant_ident, fields);
+
+    let extended_arm = match (fields, attr) {
+        // transparent expansion, forward to the inner field
+        (Fields::Unnamed(fields), VariantAttr::Transparent) if fields.unnamed.len() == 1 => {
+            quote! { ApiError::extended(__field0) }
+        }
+        (_, VariantAttr::Transparent) => Err(syn::Error::new_spanned(
+            variant_ident,
+            "the `#[api_error(transparent)]` attribute is only allowed on unamed variants with only one field",
+        ))?,
+
+        // non-transparent variants keep the trait default
+        (_, VariantAttr::Custom { .. } | VariantAttr::InheritMsg { .. }) => {
+            quote! { ::std::option::Option::None }
+        }
+    };
+
+    Ok(quote! { #extended_pat => #extended_arm })
 }

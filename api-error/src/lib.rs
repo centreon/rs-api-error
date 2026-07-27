@@ -232,6 +232,10 @@ use http::StatusCode;
 #[doc(hidden)]
 pub use ::http as __http;
 
+#[cfg(feature = "axum")]
+#[doc(hidden)]
+pub use ::serde_json as __serde_json;
+
 /// Derive macro for implementing [`ApiError`] on enums and structs.
 ///
 /// This macro generates an [`ApiError`] implementation based on
