@@ -84,3 +84,53 @@ fn extended_forwarded_through_reference() {
     let by_ref: &ValidationError = &err;
     assert_eq!(by_ref.extended(), Some(json!({ "field": "email" })));
 }
+
+// A derived transparent wrapper must forward `extended` to the inner error,
+// just like it forwards `status_code` and `message`.
+#[derive(Debug, thiserror::Error, ApiError)]
+#[error(transparent)]
+#[api_error(transparent)]
+struct TransparentStruct(ValidationError);
+
+#[derive(Debug, thiserror::Error, ApiError)]
+enum TransparentEnum {
+    #[error(transparent)]
+    #[api_error(transparent)]
+    Validation(ValidationError),
+
+    #[error("plain")]
+    #[api_error(status_code = 400, message = "plain")]
+    Plain,
+}
+
+#[test]
+fn transparent_struct_forwards_extended() {
+    let err = TransparentStruct(ValidationError);
+    assert_eq!(err.status_code(), StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(err.message().as_ref(), "validation failed");
+    assert_eq!(err.extended(), Some(json!({ "field": "email" })));
+
+    let body = serde_json::to_string(&ApiErrorResponse::new(&err)).unwrap();
+    assert_eq!(
+        body,
+        r#"{"message":"validation failed","extended":{"field":"email"}}"#
+    );
+}
+
+#[test]
+fn transparent_enum_forwards_extended() {
+    let err = TransparentEnum::Validation(ValidationError);
+    assert_eq!(err.extended(), Some(json!({ "field": "email" })));
+
+    let body = serde_json::to_string(&ApiErrorResponse::new(&err)).unwrap();
+    assert_eq!(
+        body,
+        r#"{"message":"validation failed","extended":{"field":"email"}}"#
+    );
+}
+
+#[test]
+fn non_transparent_enum_variant_keeps_extended_none() {
+    let err = TransparentEnum::Plain;
+    assert!(err.extended().is_none());
+}
