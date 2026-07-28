@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.9](https://github.com/centreon/rs-api-error/compare/api-error-v0.1.8...api-error-v0.1.9) - 2026-07-28
+
+### Fixed
+
+- forward extended call to sub-struct when #[transparent] is set [release] ([#41](https://github.com/centreon/rs-api-error/pull/41))
+
 ## [0.1.8](https://github.com/centreon/rs-api-error/compare/api-error-v0.1.7...api-error-v0.1.8) - 2026-05-20
 
 ### Fixed
