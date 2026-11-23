@@ -410,14 +410,19 @@ pub mod __private {
 ///
 /// # Multiple attributes
 ///
-/// Multiple `#[api_error]` attributes may be used.
-/// When the same field is specified multiple times,
-/// the **last occurrence wins**.
+/// Multiple `#[api_error]` attributes may be used, and are merged.
+/// Specifying the same field more than once is a compile error.
 ///
-/// ```rust
-/// #[api_error(message = "Initial")]
+/// ```
+/// # use api_error::ApiError;
+/// #[derive(Debug, thiserror::Error, ApiError)]
+/// #[error("Accepted")]
+/// #[api_error(message = "Request accepted")]
 /// #[api_error(status_code = 202)]
-/// #[api_error(message = "Final")]
+/// struct Accepted;
+///
+/// assert_eq!(Accepted.status_code(), 202);
+/// assert_eq!(Accepted.message(), "Request accepted");
 /// ```
 #[cfg(feature = "derive")]
 pub use api_error_derive::ApiError;
