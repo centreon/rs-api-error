@@ -152,7 +152,7 @@ fn expand_struct(ident: &Ident, data: DataStruct, attrs: &[Attribute]) -> syn::R
                 .map(|(i, f)| Ident::new(&format!("__field{i}"), f.span()))
                 .collect();
 
-            // for unamed fields we want to re-parse the format string to
+            // for unnamed fields we want to re-parse the format string to
             // extract positional arguments
             let (fmt_str, pos) = parser::parse_unamed_msg_format(msg, fields.len())?;
             if pos.is_empty() {
@@ -281,7 +281,7 @@ fn expand_message_arm(
 
     let message_arm = match (fields, attr) {
         (Fields::Unnamed(fields), VariantAttr::Custom { msg: Some(msg), .. }) => {
-            // for unamed fields we want to re-parse the format string to
+            // for unnamed fields we want to re-parse the format string to
             // extract positional arguments
             let (fmt_str, pos) = parser::parse_unamed_msg_format(msg, fields.unnamed.len())?;
             let fmt_args = pos
