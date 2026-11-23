@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.10](https://github.com/centreon/rs-api-error/compare/api-error-derive-v0.1.9...api-error-derive-v0.1.10) - 2026-11-23
+
+### Added
+
+- allow a boxed error in a transparent field ([#58](https://github.com/centreon/rs-api-error/pull/58))
+
+### Other
+
+- fix comment typos [release] ([#60](https://github.com/centreon/rs-api-error/pull/60))
+- *(deps)* bump syn from 2.0.117 to 3.0.10 ([#57](https://github.com/centreon/rs-api-error/pull/57))
+
 ## [0.1.9](https://github.com/centreon/rs-api-error/compare/api-error-derive-v0.1.8...api-error-derive-v0.1.9) - 2026-07-28
 
 ### Fixed
