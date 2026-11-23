@@ -139,6 +139,30 @@ assert_eq!(err.status_code().as_u16(), 503);  // Forwarded from DatabaseError
 assert_eq!(err.message().as_ref(), "Service temporarily unavailable");
 ```
 
+### Type-erased Errors
+
+`#[api_error(transparent)]` reaches the error behind a pointer, so a field can hold a `Box<dyn ApiError>`.
+
+```rust
+use api_error::ApiError;
+
+#[derive(Debug, thiserror::Error, ApiError)]
+#[error("quota exceeded")]
+#[api_error(status_code = 429, message(inherit))]
+struct QuotaExceeded;
+
+#[derive(Debug, thiserror::Error, ApiError)]
+enum GuardError {
+    #[error("{0}")]
+    #[api_error(transparent)]
+    Rejected(Box<dyn ApiError + Send + Sync>),
+}
+
+let err = GuardError::Rejected(Box::new(QuotaExceeded));
+assert_eq!(err.status_code().as_u16(), 429);  // Forwarded from QuotaExceeded
+assert_eq!(err.message().as_ref(), "quota exceeded");
+```
+
 ### Axum Integration
 
 With the `axum` feature enabled, `ApiError` types automatically implement `IntoResponse`:

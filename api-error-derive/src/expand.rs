@@ -50,7 +50,7 @@ pub fn expand(input: DeriveInput) -> TokenStream {
 
     let api_err_impl = quote! {
         #[automatically_derived]
-        impl #impl_generics ApiError for #ident #ty_generics #where_clause {
+        impl #impl_generics ::api_error::ApiError for #ident #ty_generics #where_clause {
             fn status_code(&self) -> ::api_error::__http::StatusCode {
                 #status_code
             }
@@ -92,12 +92,23 @@ pub fn expand(input: DeriveInput) -> TokenStream {
     }
 }
 
+/// Forwards `method` to the only field of a transparent wrapper.
+///
+/// The method call on `field` dereferences it until an `ApiError` is found, so a pointer to a
+/// trait object such as `Box<dyn ApiError>` is accepted.
+fn forward_to(method: &TokenStream, field: &TokenStream) -> TokenStream {
+    quote! {{
+        use ::api_error::__private::AsDynApiError as _;
+        ::api_error::ApiError::#method(#field.as_dyn_api_error())
+    }}
+}
+
 fn expand_struct(ident: &Ident, data: DataStruct, attrs: &[Attribute]) -> syn::Result<Expansion> {
     let attr = parser::parse_variant_attrs(attrs)?;
 
     let status_code = match &attr {
         VariantAttr::Transparent if data.fields.len() == 1 => {
-            quote! { ApiError::status_code(&self.0) }
+            forward_to(&quote! { status_code }, &quote! { self.0 })
         }
         VariantAttr::Transparent => Err(syn::Error::new_spanned(
             ident,
@@ -111,7 +122,7 @@ fn expand_struct(ident: &Ident, data: DataStruct, attrs: &[Attribute]) -> syn::R
     };
 
     let extended = match &attr {
-        VariantAttr::Transparent => quote! { ApiError::extended(&self.0) },
+        VariantAttr::Transparent => forward_to(&quote! { extended }, &quote! { self.0 }),
         VariantAttr::InheritMsg { .. } | VariantAttr::Custom { .. } => {
             quote! { ::std::option::Option::None }
         }
@@ -119,7 +130,7 @@ fn expand_struct(ident: &Ident, data: DataStruct, attrs: &[Attribute]) -> syn::R
 
     let message = match (attr, data.fields) {
         (VariantAttr::Transparent, fields) if fields.len() == 1 => {
-            quote! { ApiError::message(&self.0) }
+            forward_to(&quote! { message }, &quote! { self.0 })
         }
         (VariantAttr::Transparent, _) => {
             return Err(syn::Error::new_spanned(
@@ -162,7 +173,7 @@ fn expand_struct(ident: &Ident, data: DataStruct, attrs: &[Attribute]) -> syn::R
             }
         }
         (VariantAttr::Custom { msg: None, .. }, _) => {
-            quote! { ::std::borrow::Cow::Borrowed(ApiError::status_code(self).canonical_reason().unwrap_or("Unknown error")) }
+            quote! { ::std::borrow::Cow::Borrowed(::api_error::ApiError::status_code(self).canonical_reason().unwrap_or("Unknown error")) }
         }
     };
 
@@ -242,7 +253,7 @@ fn expand_status_arm(
     let status_code = match (fields, attrs) {
         // forward to inner field with transparent
         (Fields::Unnamed(fields), VariantAttr::Transparent) if fields.unnamed.len() == 1 => {
-            quote! { ApiError::status_code(__field0) }
+            forward_to(&quote! { status_code }, &quote! { __field0 })
         }
         (_, VariantAttr::Transparent) => Err(syn::Error::new_spanned(
             variant_ident,
@@ -288,12 +299,12 @@ fn expand_message_arm(
         }
         (_, VariantAttr::Custom { msg: None, .. }) => {
             // default message to canonical reason
-            quote! { ::std::borrow::Cow::Borrowed(ApiError::status_code(self).canonical_reason().unwrap_or("Unknown error")) }
+            quote! { ::std::borrow::Cow::Borrowed(::api_error::ApiError::status_code(self).canonical_reason().unwrap_or("Unknown error")) }
         }
 
         // transparent expansion, call the inner field
         (Fields::Unnamed(fields), VariantAttr::Transparent) if fields.unnamed.len() == 1 => {
-            quote! { ApiError::message(__field0) }
+            forward_to(&quote! { message }, &quote! { __field0 })
         }
         (_, VariantAttr::Transparent) => Err(syn::Error::new_spanned(
             variant_ident,
@@ -320,7 +331,7 @@ fn expand_extended_arm(
     let extended_arm = match (fields, attr) {
         // transparent expansion, forward to the inner field
         (Fields::Unnamed(fields), VariantAttr::Transparent) if fields.unnamed.len() == 1 => {
-            quote! { ApiError::extended(__field0) }
+            forward_to(&quote! { extended }, &quote! { __field0 })
         }
         (_, VariantAttr::Transparent) => Err(syn::Error::new_spanned(
             variant_ident,

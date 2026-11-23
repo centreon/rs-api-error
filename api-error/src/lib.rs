@@ -132,6 +132,30 @@
 //! assert_eq!(err.message().as_ref(), "Service temporarily unavailable");
 //! ```
 //!
+//! ### Type-erased Errors
+//!
+//! `#[api_error(transparent)]` reaches the error behind a pointer, so a field can hold a `Box<dyn ApiError>`.
+//!
+//! ```rust
+//! use api_error::ApiError;
+//!
+//! #[derive(Debug, thiserror::Error, ApiError)]
+//! #[error("quota exceeded")]
+//! #[api_error(status_code = 429, message(inherit))]
+//! struct QuotaExceeded;
+//!
+//! #[derive(Debug, thiserror::Error, ApiError)]
+//! enum GuardError {
+//!     #[error("{0}")]
+//!     #[api_error(transparent)]
+//!     Rejected(Box<dyn ApiError + Send + Sync>),
+//! }
+//!
+//! let err = GuardError::Rejected(Box::new(QuotaExceeded));
+//! assert_eq!(err.status_code().as_u16(), 429);  // Forwarded from QuotaExceeded
+//! assert_eq!(err.message().as_ref(), "quota exceeded");
+//! ```
+//!
 //! ### Axum Integration
 //!
 //! With the `axum` feature enabled, `ApiError` types automatically implement `IntoResponse`:
@@ -235,6 +259,39 @@ pub use ::http as __http;
 #[cfg(feature = "axum")]
 #[doc(hidden)]
 pub use ::serde_json as __serde_json;
+
+#[doc(hidden)]
+pub mod __private {
+    use super::ApiError;
+
+    pub trait AsDynApiError<'a> {
+        fn as_dyn_api_error(&self) -> &(dyn ApiError + 'a);
+    }
+
+    impl<'a, T: ApiError + 'a> AsDynApiError<'a> for T {
+        fn as_dyn_api_error(&self) -> &(dyn ApiError + 'a) {
+            self
+        }
+    }
+
+    impl<'a> AsDynApiError<'a> for dyn ApiError + 'a {
+        fn as_dyn_api_error(&self) -> &(dyn ApiError + 'a) {
+            self
+        }
+    }
+
+    impl<'a> AsDynApiError<'a> for dyn ApiError + Send + 'a {
+        fn as_dyn_api_error(&self) -> &(dyn ApiError + 'a) {
+            self
+        }
+    }
+
+    impl<'a> AsDynApiError<'a> for dyn ApiError + Send + Sync + 'a {
+        fn as_dyn_api_error(&self) -> &(dyn ApiError + 'a) {
+            self
+        }
+    }
+}
 
 /// Derive macro for implementing [`ApiError`] on enums and structs.
 ///
@@ -347,6 +404,7 @@ pub use ::serde_json as __serde_json;
 ///
 /// - `transparent` must be used **alone**
 /// - all API metadata is delegated to the wrapped error
+/// - the wrapped error may be behind a pointer, such as `Box<dyn ApiError + Send + Sync>`
 ///
 /// ---
 ///
