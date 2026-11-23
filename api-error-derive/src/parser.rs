@@ -254,7 +254,7 @@ impl Parse for CustomAttrFields {
 }
 
 /// Takes a message format literal with positional arguments and replaces
-/// all positional arguments with unamed ones, verifying that the referenced
+/// all positional arguments with unnamed ones, verifying that the referenced
 /// field indices are in-bounds.
 ///
 /// Example:
